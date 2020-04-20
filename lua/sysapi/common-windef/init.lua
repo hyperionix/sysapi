@@ -1,0 +1,7 @@
+require "common-windef.types-windef"
+require "common-windef.error-windef"
+require "common-windef.ntstatus-windef"
+require "common-windef.rtl-windef"
+require "common-windef.lang-windef"
+require "common-windef.crt-windef"
+require "common-windef.synch-windef"
