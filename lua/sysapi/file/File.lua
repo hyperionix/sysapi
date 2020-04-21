@@ -13,8 +13,15 @@ local tcache = require "utils.ctype-cache"
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
 
-local File = SysapiMod("File")
-local FileGetters = {
+tcache:cache("FILE_BASIC_INFORMATION")
+tcache:cache("FILE_STANDARD_INFORMATION")
+
+local FILE_ATTRIBUTE_STRINGIFY_TABLE = stringify.getTable("FILE_ATTRIBUTE")
+
+local M = SysapiMod("File")
+local Getters = {}
+-- XXX: This nil fields are used to satisfy code completion plugin
+local Methods = {
   --- access time
   accessTime = nil,
   --- attributes
@@ -32,43 +39,40 @@ local FileGetters = {
   --- signature status
   signStatus = nil,
   --- list of signers
-  signers = nil
+  signers = nil,
+  --- path with File object was created
+  openPath = nil
 }
 
-local File_MT = {
-  __index = function(self, name)
-    local getter = rawget(FileGetters, name)
-    if getter then
-      return getter(self, name)
-    end
-
-    local method = rawget(File, name)
-    if method then
-      return method
+-- XXX: This trick is also used to satisfy code completion plugin
+local MT = {__index = Methods}
+rawset(
+  MT,
+  string.format("__index"),
+  function(self, name)
+    if Getters[name] then
+      return Getters[name](self, name)
+    else
+      return Methods[name]
     end
   end
-}
+)
 
-tcache:cache("FILE_BASIC_INFORMATION")
-tcache:cache("FILE_STANDARD_INFORMATION")
-
-local FILE_ATTRIBUTE_STRINGIFY_TABLE = stringify.getTable("FILE_ATTRIBUTE")
-
-function FileGetters._basicInfo(obj, name)
+function Getters._basicInfo(obj, name)
   local info = obj:queryInfo(ffi.C.FileBasicInformation, tcache.FILE_BASIC_INFORMATION, tcache.PFILE_BASIC_INFORMATION)
   rawset(obj, name, info)
   return info
 end
 
-function FileGetters._standardInfo(obj, name)
+function Getters._standardInfo(obj, name)
   local info =
     obj:queryInfo(ffi.C.FileStandardInformation, tcache.FILE_STANDARD_INFORMATION, tcache.PFILE_STANDARD_INFORMATION)
   rawset(obj, name, info)
   return info
 end
 
-function FileGetters._certInfo(obj, name)
-  local signStatus, signers = cert.getCertInfo(obj.relativePath or obj.fullPath)
+function Getters._certInfo(obj, name)
+  local signStatus, signers = cert.getCertInfo(obj.openPath or obj.fullPath)
   obj._certInfo = {
     signStatus = signStatus,
     signers = signers
@@ -76,7 +80,7 @@ function FileGetters._certInfo(obj, name)
   return obj._certInfo
 end
 
-function FileGetters.fullPath(obj, name)
+function Getters.fullPath(obj, name)
   local buf = ffi.new("char[?]", 512)
   local ret = ffi.C.GetFinalPathNameByHandleA(obj.handle, buf, 512, FILE_NAME_NORMALIZED)
   if ret ~= 0 then
@@ -86,23 +90,23 @@ function FileGetters.fullPath(obj, name)
   end
 end
 
-function FileGetters.handle(obj, name)
+function Getters.handle(obj, name)
   local handle =
-    ffi.C.CreateFileA(obj.relativePath, GENERIC_READ, FILE_SHARE_ALL, nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nil)
+    ffi.C.CreateFileA(obj.openPath, GENERIC_READ, FILE_SHARE_ALL, nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nil)
   if handle ~= INVALID_HANDLE_VALUE then
     rawset(obj, name, ffi.gc(handle, ffi.C.CloseHandle))
     return handle
   end
 end
 
-function FileGetters.size(obj)
+function Getters.size(obj)
   if obj._standardInfo then
     obj.size = tonumber(obj._standardInfo.EndOfFile.QuadPart)
     return obj.size
   end
 end
 
-function FileGetters.createTime(obj, name)
+function Getters.createTime(obj, name)
   if obj._basicInfo then
     local createTime = time.toUnixTimestamp(obj._basicInfo.CreationTime.QuadPart)
     rawset(obj, name, createTime)
@@ -110,7 +114,7 @@ function FileGetters.createTime(obj, name)
   end
 end
 
-function FileGetters.accessTime(obj, name)
+function Getters.accessTime(obj, name)
   if obj._basicInfo then
     local accessTime = time.toUnixTimestamp(obj._basicInfo.LastAccessTime.QuadPart)
     rawset(obj, name, accessTime)
@@ -118,7 +122,7 @@ function FileGetters.accessTime(obj, name)
   end
 end
 
-function FileGetters.writeTime(obj, name)
+function Getters.writeTime(obj, name)
   if obj._basicInfo then
     local writeTime = time.toUnixTimestamp(obj._basicInfo.LastWriteTime.QuadPart)
     rawset(obj, name, writeTime)
@@ -126,7 +130,7 @@ function FileGetters.writeTime(obj, name)
   end
 end
 
-function FileGetters.changeTime(obj, name)
+function Getters.changeTime(obj, name)
   if obj._basicInfo then
     local changeTime = time.toUnixTimestamp(obj._basicInfo.ChangeTime.QuadPart)
     rawset(obj, name, changeTime)
@@ -134,30 +138,33 @@ function FileGetters.changeTime(obj, name)
   end
 end
 
-function FileGetters.resources(obj, name)
-  local resources = FileResources.create(obj.relativePath or obj.fullPath)
+function Getters.resources(obj, name)
+  local resources = FileResources.create(obj.openPath or obj.fullPath)
   rawset(obj, name, resources)
   return resources
 end
 
-function FileGetters.attributes(obj, name)
+function Getters.attributes(obj, name)
   if obj._basicInfo then
     rawset(obj, name, obj._basicInfo.FileAttributes)
     return obj._basicInfo.FileAttributes
   end
 end
 
-function FileGetters.signStatus(obj, name)
+function Getters.signStatus(obj, name)
   local signStatus = obj._certInfo.signStatus
   rawset(obj, name, signStatus)
   return signStatus
 end
 
-function FileGetters.signers(obj, name)
+function Getters.signers(obj, name)
   local signers = obj._certInfo.signers
   rawset(obj, name, signers)
   return signers
 end
+
+--- Constructors
+-- @section Constructors
 
 --- Create or open a file
 -- @string path relative or absolute path to file
@@ -167,7 +174,7 @@ end
 -- @int[opt=FILE_SHARE_ALL] share sharing options
 -- @return @{File} object or `nil`
 -- @function File.open
-function File.create(path, disp, access, attr, share)
+function M.create(path, disp, access, attr, share)
   local handle =
     ffi.C.CreateFileA(
     path,
@@ -179,7 +186,7 @@ function File.create(path, disp, access, attr, share)
     nil
   )
   if handle ~= INVALID_HANDLE_VALUE then
-    return setmetatable({handle = ffi.gc(handle, ffi.C.CloseHandle), relativePath = path}, File_MT)
+    return setmetatable({handle = ffi.gc(handle, ffi.C.CloseHandle), openPath = path}, MT)
   end
 end
 
@@ -187,30 +194,49 @@ end
 -- @int handle to the file
 -- @return @{File} object or `nil`
 -- @function File.fromHandle
-function File.fromHandle(handle)
-  return setmetatable({handle = handle}, File_MT)
+function M.fromHandle(handle)
+  return setmetatable({handle = handle}, Methods)
 end
 
 --- Create @{File} object from itspath
 -- @param path full or relative path to the file
 -- @return @{File} object or `nil`
 -- @function File.fromPath
-function File.fromPath(path)
-  return setmetatable({relativePath = path}, File_MT)
+function M.fromPath(path)
+  return setmetatable({openPath = path}, Methods)
+end
+
+--- Static Methods
+-- @section StaticMethods
+
+--- Delete file by name
+-- @param path to file
+-- @return `true` on success, `false` on error
+-- @function File.delete
+function M.delete(path)
+  return ffi.C.DeleteFileA(path)
 end
 
 --- Stringify file attributes mask
 -- @int attrs file attributes
 -- @return string representation of the mask
 -- @function File.stringifyAttributes
-function File.stringifyAttributes(attrs)
+function M.stringifyAttributes(attrs)
   return stringify.mask(attrs, FILE_ATTRIBUTE_STRINGIFY_TABLE)
 end
+
+function M._getGetters()
+  return Getters
+end
+
+--- Object Methods
+-- @section ObjectMethods
 
 --- Read the whole data of file or a part
 -- @int[opt=all] readSize size of data to read
 -- @return read data or `nil`
-function File:read(readSize)
+-- @function read
+function Methods:read(readSize)
   readSize = readSize or self.size
   local fileData = ffi.new("char[?]", readSize)
   local outBytes = ffi.new("DWORD[1]")
@@ -224,7 +250,8 @@ end
 -- @param ctype C type returned by `ffi.typeof()`
 -- @param ctypePtr pointer to the type
 -- @return typed pointer depends on `typeName` or `nil`
-function File:queryInfo(infoClass, ctype, ctypePtr)
+-- @function queryInfo
+function Methods:queryInfo(infoClass, ctype, ctypePtr)
   local handle = self.handle
   if handle then
     local data = ctype()
@@ -250,8 +277,9 @@ end
 -- @param infoClass `FILE_INFORMATION_CLASS`
 -- @param info corresponding information structure
 -- @param infoSize of the information
--- @return `true` of `nil`
-function File:setInfo(infoClass, info, infoSize)
+-- @return `true` or `false`
+-- @function setInfo
+function Methods:setInfo(infoClass, info, infoSize)
   local handle = self.handle
   if handle then
     local io = ffi.new("IO_STATUS_BLOCK")
@@ -260,22 +288,26 @@ function File:setInfo(infoClass, info, infoSize)
       return true
     end
   end
+
+  return false
 end
 
 --- Delete the file
--- @return `true` of `nil`
-function File:delete()
+-- @return `true` or `false`
+-- @function delete
+function Methods:delete()
   local info = ffi.new("FILE_DISPOSITION_INFORMATION_EX")
   info.Flags = FILE_DISPOSITION_DELETE
   return self:setInfo(ffi.C.FileDispositionInformationEx, info)
 end
 
 --- Close the file
-function File:close()
+-- @function close
+function Methods:close()
   local handle = rawget(self, "handle")
   if handle then
     ffi.C.CloseHandle(ffi.gc(handle, nil))
   end
 end
 
-return File
+return M
