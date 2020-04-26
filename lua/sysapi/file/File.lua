@@ -195,7 +195,7 @@ end
 -- @return @{File} object or `nil`
 -- @function File.fromHandle
 function M.fromHandle(handle)
-  return setmetatable({handle = handle}, Methods)
+  return setmetatable({handle = handle}, MT)
 end
 
 --- Create @{File} object from itspath
@@ -203,7 +203,7 @@ end
 -- @return @{File} object or `nil`
 -- @function File.fromPath
 function M.fromPath(path)
-  return setmetatable({openPath = path}, Methods)
+  return setmetatable({openPath = path}, MT)
 end
 
 --- Static Methods

@@ -16,8 +16,19 @@ local string = string
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
 
-local Process = SysapiMod("Process")
-local ProcessGetters = {
+tcache:cache("PROCESS_EXTENDED_BASIC_INFORMATION")
+tcache:cache("UNICODE_STRING")
+tcache:cache("ULONG_PTR")
+tcache:cache("KERNEL_USER_TIMES")
+tcache:cache("PROCESS_MITIGATION_DEP_POLICY")
+tcache:cache("PROCESS_MITIGATION_ASLR_POLICY")
+tcache:cache("PROCESS_MITIGATION_DYNAMIC_CODE_POLICY")
+tcache:cache("PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY")
+
+local M = SysapiMod("Process")
+local Getters = {}
+-- XXX: This nil fields are used to satisfy code completion plugin
+local Methods = {
   --- main executable path
   backingFile = nil,
   --- bitness (32 or 64)
@@ -42,30 +53,21 @@ local ProcessGetters = {
   token = nil
 }
 
-local Process_MT = {
-  __index = function(self, name)
-    local getter = rawget(ProcessGetters, name)
-    if getter then
-      return getter(self, name)
-    end
-
-    local method = rawget(Process, name)
-    if method then
-      return method
+-- XXX: This trick is also used to satisfy code completion plugin
+local MT = {__index = Methods}
+rawset(
+  MT,
+  string.format("__index"),
+  function(self, name)
+    if Getters[name] then
+      return Getters[name](self, name)
+    else
+      return Methods[name]
     end
   end
-}
+)
 
-tcache:cache("PROCESS_EXTENDED_BASIC_INFORMATION")
-tcache:cache("UNICODE_STRING")
-tcache:cache("ULONG_PTR")
-tcache:cache("KERNEL_USER_TIMES")
-tcache:cache("PROCESS_MITIGATION_DEP_POLICY")
-tcache:cache("PROCESS_MITIGATION_ASLR_POLICY")
-tcache:cache("PROCESS_MITIGATION_DYNAMIC_CODE_POLICY")
-tcache:cache("PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY")
-
-function ProcessGetters._extendedBasicInfo(obj, name)
+function Getters._extendedBasicInfo(obj, name)
   local info =
     obj:queryInfo(
     ffi.C.ProcessBasicInformation,
@@ -76,13 +78,13 @@ function ProcessGetters._extendedBasicInfo(obj, name)
   return info
 end
 
-function ProcessGetters.token(obj, name)
+function Getters.token(obj, name)
   local token = Token.open(obj.handle)
   rawset(obj, name, token)
   return token
 end
 
-function ProcessGetters.pid(obj, name)
+function Getters.pid(obj, name)
   if obj._extendedBasicInfo then
     local pid = toaddress(obj._extendedBasicInfo.BasicInfo.UniqueProcessId)
     rawset(obj, name, pid)
@@ -90,7 +92,7 @@ function ProcessGetters.pid(obj, name)
   end
 end
 
-function ProcessGetters.ppid(obj, name)
+function Getters.ppid(obj, name)
   if obj._extendedBasicInfo then
     local ppid = toaddress(obj._extendedBasicInfo.BasicInfo.InheritedFromUniqueProcessId)
     rawset(obj, name, ppid)
@@ -98,7 +100,7 @@ function ProcessGetters.ppid(obj, name)
   end
 end
 
-function ProcessGetters.bitness(obj, name)
+function Getters.bitness(obj, name)
   if not sysinfo.is64Bit then
     rawset(obj, name, 32)
     return 32
@@ -117,7 +119,7 @@ function ProcessGetters.bitness(obj, name)
   end
 end
 
-function ProcessGetters.backingFile(obj, name)
+function Getters.backingFile(obj, name)
   local info = obj:queryInfo(ffi.C.ProcessImageFileNameWin32, tcache.UNICODE_STRING, tcache.PUNICODE_STRING, 1024)
   if info then
     local backingFile = string.fromUS(info)
@@ -126,7 +128,7 @@ function ProcessGetters.backingFile(obj, name)
   end
 end
 
-function ProcessGetters.commandLine(obj, name)
+function Getters.commandLine(obj, name)
   local info = obj:queryInfo(ffi.C.ProcessCommandLineInformation, tcache.UNICODE_STRING, tcache.PUNICODE_STRING, 1024)
   if info then
     local commandLine = string.fromUS(info)
@@ -135,7 +137,7 @@ function ProcessGetters.commandLine(obj, name)
   end
 end
 
-function ProcessGetters.createTime(obj, name)
+function Getters.createTime(obj, name)
   local info = obj:queryInfo(ffi.C.ProcessTimes, tcache.KERNEL_USER_TIMES, tcache.PKERNEL_USER_TIMES)
   if info then
     local createTime = tonumber(time.toUnixTimestamp(info.CreateTime.QuadPart))
@@ -144,7 +146,7 @@ function ProcessGetters.createTime(obj, name)
   end
 end
 
-function ProcessGetters.policyDep(obj, name)
+function Getters.policyDep(obj, name)
   local policy =
     obj:_getPolicy(ffi.C.ProcessDEPPolicy, tcache.PROCESS_MITIGATION_DEP_POLICY, tcache.PPROCESS_MITIGATION_DEP_POLICY)
   if policy then
@@ -154,7 +156,7 @@ function ProcessGetters.policyDep(obj, name)
   end
 end
 
-function ProcessGetters.policyAslr(obj, name)
+function Getters.policyAslr(obj, name)
   local policy =
     obj:_getPolicy(
     ffi.C.ProcessASLRPolicy,
@@ -168,7 +170,7 @@ function ProcessGetters.policyAslr(obj, name)
   end
 end
 
-function ProcessGetters.policyProhibitDynamicCode(obj, name)
+function Getters.policyProhibitDynamicCode(obj, name)
   local policy =
     obj:_getPolicy(
     ffi.C.ProcessDynamicCodePolicy,
@@ -182,7 +184,7 @@ function ProcessGetters.policyProhibitDynamicCode(obj, name)
   end
 end
 
-function ProcessGetters.policyBinarySignature(obj, name)
+function Getters.policyBinarySignature(obj, name)
   local policy =
     obj:_getPolicy(
     ffi.C.ProcessSignaturePolicy,
@@ -200,7 +202,7 @@ end
 -- @string cmdLine process command line
 -- @return @{Process} object
 -- @function Process.run
-function Process.run(cmdLine)
+function M.run(cmdLine)
   local si = ffi.new("STARTUPINFOA[1]")
   si[0].cb = ffi.sizeof(si[0])
   local pi = ffi.new("PROCESS_INFORMATION[1]")
@@ -215,7 +217,7 @@ function Process.run(cmdLine)
       threadHandle = ffi.gc(pi[0].hThread, ffi.C.CloseHandle),
       pid = pi[0].dwProcessId
     },
-    Process_MT
+    MT
   )
 end
 
@@ -224,10 +226,10 @@ end
 -- @int[opt] access access to the process object
 -- @return @{Process} object
 -- @function Process.open
-function Process.open(pid, access)
+function M.open(pid, access)
   local handle = ffi.C.OpenProcess(access or PROCESS_ALL_ACCESS, false, pid)
   if handle ~= ffi.NULL then
-    return setmetatable({pid = pid, handle = ffi.gc(handle, ffi.C.CloseHandle)}, Process_MT)
+    return setmetatable({pid = pid, handle = ffi.gc(handle, ffi.C.CloseHandle)}, MT)
   end
 end
 
@@ -236,7 +238,7 @@ end
 -- @int[opt] access access to the process object
 -- @return @{Process} object
 -- @function Process.openByName
-function Process.openByName(name, access)
+function M.openByName(name, access)
   local snapshot = ffi.C.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
   if snapshot == INVALID_HANDLE_VALUE then
     return
@@ -251,7 +253,7 @@ function Process.openByName(name, access)
     repeat
       local procName = ffi.string(entry[0].szExeFile)
       if procName:lower() == name then
-        return Process.open(entry[0].th32ProcessID, access)
+        return M.open(entry[0].th32ProcessID, access)
       end
     until ffi.C.Process32Next(snapshot, entry[0]) == 0
   end
@@ -261,11 +263,29 @@ end
 -- @int handle handle of the process
 -- @return @{Process} object
 -- @function Process.fromHandle
-function Process.fromHandle(handle)
-  return setmetatable({handle = handle}, Process_MT)
+function M.fromHandle(handle)
+  return setmetatable({handle = handle}, MT)
 end
 
-function Process:_getPolicy(policyType, ctype, ctypePtr)
+--- Create Process Object from current process
+-- @return @{Process} object
+-- @function Process.current
+function M.current()
+  return M.fromHandle(ffi.C.GetCurrentProcess())
+end
+
+--- Is the handle is the current process
+-- return boolean
+-- @functino Process.isCurrentProcess`
+function M.isCurrentProcess(handle)
+  return ffi.C.GetProcessId(handle) == ffi.C.GetCurrentProcessId()
+end
+
+function M._getGetters()
+  return Getters
+end
+
+function Methods:_getPolicy(policyType, ctype, ctypePtr)
   local buffer = ctype()
   if ffi.C.GetProcessMitigationPolicy(self.handle, policyType, buffer, ffi.sizeof(buffer)) ~= 0 then
     return ffi.cast(ctypePtr, buffer)
@@ -278,7 +298,8 @@ end
 -- @param ctypePtr pointer to the type
 -- @param[opt=sizeof(ctype)] assumedSize assumed size of the query info output
 -- @return typed pointer depends on `typeName` or `nil`
-function Process:queryInfo(infoClass, ctype, ctypePtr, assumedSize)
+-- @function queryInfo
+function Methods:queryInfo(infoClass, ctype, ctypePtr, assumedSize)
   local data = assumedSize and ffi.new("char[?]", assumedSize) or ctype()
   local size = assumedSize or ffi.sizeof(ctype)
   local retSize = ffi.new("ULONG[1]")
@@ -301,7 +322,8 @@ end
 -- @param funcAddr address of the function for thread thread
 -- @param paramAddr address of the argument for the thread
 -- @return @{Thread} object
-function Process:createThread(funcAddr, paramAddr)
+-- @function createThread
+function Methods:createThread(funcAddr, paramAddr)
   local tid = ffi.new("DWORD[1]")
   local handle = ffi.C.CreateRemoteThread(self.handle, nil, 0, funcAddr, paramAddr, 0, tid)
   if handle ~= NULL then
@@ -314,14 +336,16 @@ end
 -- @int[opt] protect the memory protection for the region of the pages
 -- @int[opt] allocType the type of memory allocation
 -- @return pointer to the allocated region or `nil`
-function Process:memAlloc(size, protect, allocType)
+-- @function memAlloc
+function Methods:memAlloc(size, protect, allocType)
   return vm.alloc(self.handle, size, protect or PAGE_EXECUTE_READWRITE, allocType or bor(MEM_COMMIT, MEM_RESERVE))
 end
 
 --- Free virtual memory region in the process
 -- @int addr address of the memory region
 -- @return `true` if success or `false` otherwise
-function Process:memFree(addr)
+-- @function memFree
+function Methods:memFree(addr)
   return vm.free(self.handle, addr)
 end
 
@@ -330,7 +354,8 @@ end
 -- @param buffer (***cdata***) buffer to read into
 -- @int size size of bytes to read
 -- @return `true` if success or `false` otherwise
-function Process:memRead(addr, buffer, size)
+-- @function memRead
+function Methods:memRead(addr, buffer, size)
   return vm.read(self.handle, addr, buffer, size or ffi.sizeof(buffer))
 end
 
@@ -339,7 +364,8 @@ end
 -- @param buffer (***cdata*** or ***string***) buffer with data to write
 -- @int size of the data (*optional if* `buffer` *is string*)
 -- @return `true` if success or `false` otherwise
-function Process:memWrite(addr, buffer, size)
+-- @function memWrite
+function Methods:memWrite(addr, buffer, size)
   if type(buffer) == "string" then
     return vm.write(self.handle, addr, buffer, #buffer)
   else
@@ -352,26 +378,30 @@ end
 -- @int size size of the region
 -- @param protect new protect of the memory region
 -- @return `true` if success or `false` otherwise
-function Process:memProtect(addr, size, protect)
+-- @function memProtect
+function Methods:memProtect(addr, size, protect)
   return vm.protect(self.handle, addr, size, protect)
 end
 
 --- Query information about a memory region
 -- @int addr address of the memory region
 -- @return [`MEMORY_BASIC_INFORMATION`](https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-memory_basic_information) or `nil`
-function Process:memQuery(addr)
+-- @function memQuery
+function Methods:memQuery(addr)
   return vm.query(self.handle, addr)
 end
 
 --- Close process handle
-function Process:close()
+-- @function close
+function Methods:close()
   ffi.C.CloseHandle(ffi.gc(self.handle, nil))
 end
 
 --- Terminate process with optional code
 -- @int[opt] code process termination status
-function Process:terminate(code)
+-- @function terminate
+function Methods:terminate(code)
   ffi.C.TerminateProcess(self.handle, code or 0)
 end
 
-return Process
+return M
