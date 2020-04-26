@@ -68,4 +68,9 @@ function ServiceManager:forEachService(func, serviceTypes, state)
   end
 end
 
+--- Close service manager
+function ServiceManager:close()
+  advapi32.CloseServiceHandle(self.handle)
+end
+
 return ServiceManager

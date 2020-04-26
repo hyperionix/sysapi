@@ -24,12 +24,17 @@ local function testMem(p)
       assert(info.AllocationProtect == PAGE_READONLY)
       assert(p:memFree(targetMem) == 1)
 
-      local targetMem = p:memAlloc(1024)
+      local targetMem = p:memAlloc(1024, PAGE_READONLY)
       assert(targetMem)
-      assert(p:memProtect(targetMem, 1024, PAGE_READONLY) == 1)
+
       local info = p:memQuery(targetMem)
       assert(info)
-      assert(info.AllocationProtect == PAGE_READONLY)
+      assert(info.Protect == PAGE_READONLY)
+
+      assert(p:memProtect(targetMem, 1024, PAGE_EXECUTE_READWRITE) == 1)
+      local info = p:memQuery(targetMem)
+      assert(info)
+      assert(info.Protect == PAGE_EXECUTE_READWRITE)
       assert(p:memFree(targetMem) == 1)
     end
   )
@@ -78,7 +83,11 @@ end
 
 local function testMisc(p)
   assert(p.backingFile:lower() == [[c:\windows\system32\notepad.exe]])
-  print(p.createTime)
+
+  local getters = Process._getGetters()
+  for name, getter in pairs(getters) do
+    print(name, p[name])
+  end
 end
 
 local p = Process.run("notepad.exe")

@@ -15,4 +15,9 @@ ffi.cdef [[
   NTSTATUS RtlGetVersion(
     PRTL_OSVERSIONINFOW lpVersionInformation
   );
+
+  VOID RtlInitUnicodeString(
+    PUNICODE_STRING DestinationString,
+    PCWSTR          SourceString
+  );
 ]]

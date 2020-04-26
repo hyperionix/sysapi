@@ -22,8 +22,8 @@ SYSAPI = {
 }
 
 -- XXX: We have to do all require due to nature of loading sysapi as package of Hyperionix (https://hyperionix.com)
-require "utils"
 require "common-windef"
+require "utils"
 require "sysinfo"
 require "sysapi-mod"
 require "thirdparty"

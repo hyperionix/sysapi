@@ -11,5 +11,7 @@ ffi.cdef [[
     size_t nameNumberOfElements,
     char * ext,
     size_t extNumberOfElements
-);
+  );
+
+  int getchar (void);
 ]]
