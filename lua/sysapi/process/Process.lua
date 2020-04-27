@@ -85,10 +85,16 @@ function Getters.token(obj, name)
 end
 
 function Getters.pid(obj, name)
-  if obj._extendedBasicInfo then
-    local pid = toaddress(obj._extendedBasicInfo.BasicInfo.UniqueProcessId)
+  if obj.handle == ffi.C.GetCurrentProcess() then
+    local pid = toaddress(ffi.C.GetCurrentProcessId())
     rawset(obj, name, pid)
     return pid
+  else
+    if obj._extendedBasicInfo then
+      local pid = toaddress(obj._extendedBasicInfo.BasicInfo.UniqueProcessId)
+      rawset(obj, name, pid)
+      return pid
+    end
   end
 end
 

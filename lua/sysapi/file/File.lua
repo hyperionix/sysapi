@@ -92,7 +92,15 @@ end
 
 function Getters.handle(obj, name)
   local handle =
-    ffi.C.CreateFileA(obj.openPath, GENERIC_READ, FILE_SHARE_ALL, nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nil)
+    ffi.C.CreateFileA(
+    obj.openPath or obj.fullPath,
+    GENERIC_READ,
+    FILE_SHARE_ALL,
+    nil,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    nil
+  )
   if handle ~= INVALID_HANDLE_VALUE then
     rawset(obj, name, ffi.gc(handle, ffi.C.CloseHandle))
     return handle
@@ -190,20 +198,32 @@ function M.create(path, disp, access, attr, share)
   end
 end
 
+function M.fromTable(kwargs)
+  return setmetatable(kwargs, MT)
+end
+
 --- Create @{File} object from a handle
 -- @int handle to the file
 -- @return @{File} object or `nil`
 -- @function File.fromHandle
 function M.fromHandle(handle)
-  return setmetatable({handle = handle}, MT)
+  return M.fromTable({handle = handle})
 end
 
---- Create @{File} object from itspath
+--- Create @{File} object from its path
 -- @param path full or relative path to the file
 -- @return @{File} object or `nil`
 -- @function File.fromPath
 function M.fromPath(path)
-  return setmetatable({openPath = path}, MT)
+  return M.fromTable({openPath = path})
+end
+
+--- Create @{File} object from its full path
+-- @param fullPath full path to the file
+-- @return @{File} object or `nil`
+-- @function File.fromFullPath
+function M.fromFullPath(fullPath)
+  return M.fromTable({fullPath = fullPath})
 end
 
 --- Static Methods
