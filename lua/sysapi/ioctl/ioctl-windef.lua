@@ -1,7 +1,10 @@
 setfenv(1, require "sysapi-ns")
 require "utils.stringify"
 
-local rshift, band = bit.rshift, bit.band
+local rshift = bit.rshift
+local lshift = bit.lshift
+local bor = bit.bor
+local band = bit.band
 
 StringifyTableStart("DEVICE_TYPE", "FILE_DEVICE_")
 FILE_DEVICE_BEEP = 0x00000001
@@ -105,3 +108,20 @@ end
 function METHOD_FROM_CTL_CODE(ctlCode)
   return band(ctlCode, 3)
 end
+
+function CTL_CODE(DeviceType, Function, Method, Access)
+  return bor(lshift(DeviceType, 16), lshift(Access, 14), lshift(Function, 2), Method)
+end
+
+ffi.cdef [[
+  BOOL DeviceIoControl(
+  HANDLE       hDevice,
+  DWORD        dwIoControlCode,
+  LPVOID       lpInBuffer,
+  DWORD        nInBufferSize,
+  LPVOID       lpOutBuffer,
+  DWORD        nOutBufferSize,
+  LPDWORD      lpBytesReturned,
+  LPOVERLAPPED lpOverlapped
+);
+]]

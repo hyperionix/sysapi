@@ -15,6 +15,7 @@ assert(ntdll)
 
 tcache:cache("FILE_BASIC_INFORMATION")
 tcache:cache("FILE_STANDARD_INFORMATION")
+tcache:cache("FILE_FS_DEVICE_INFORMATION")
 
 local FILE_ATTRIBUTE_STRINGIFY_TABLE = stringify.getTable("FILE_ATTRIBUTE")
 
@@ -26,6 +27,8 @@ local Methods = {
   accessTime = nil,
   --- attributes
   attributes = nil,
+  --- file device type
+  deviceType = nil,
   --- change time
   changeTime = nil,
   --- create time
@@ -67,6 +70,17 @@ end
 function Getters._standardInfo(obj, name)
   local info =
     obj:queryInfo(ffi.C.FileStandardInformation, tcache.FILE_STANDARD_INFORMATION, tcache.PFILE_STANDARD_INFORMATION)
+  rawset(obj, name, info)
+  return info
+end
+
+function Getters._deviceInfo(obj, name)
+  local info =
+    obj:queryVolumeInfo(
+    ffi.C.FileFsDeviceInformation,
+    tcache.FILE_FS_DEVICE_INFORMATION,
+    tcache.PFILE_FS_DEVICE_INFORMATION
+  )
   rawset(obj, name, info)
   return info
 end
@@ -143,6 +157,12 @@ function Getters.changeTime(obj, name)
     local changeTime = time.toUnixTimestamp(obj._basicInfo.ChangeTime.QuadPart)
     rawset(obj, name, changeTime)
     return changeTime
+  end
+end
+
+function Getters.deviceType(obj, name)
+  if obj._deviceInfo then
+    return obj._deviceInfo.DeviceType
   end
 end
 
@@ -265,6 +285,11 @@ function Methods:read(readSize)
   end
 end
 
+function Methods:write(data, size)
+  local outBytes = ffi.new("DWORD[1]")
+  return ffi.C.WriteFile(self.handle, data, size or #data, outBytes, nil)
+end
+
 --- Query information about the file
 -- @param infoClass `FILE_INFORMATION_CLASS`
 -- @param ctype C type returned by `ffi.typeof()`
@@ -293,6 +318,28 @@ function Methods:queryInfo(infoClass, ctype, ctypePtr)
   end
 end
 
+function Methods:queryVolumeInfo(infoClass, ctype, ctypePtr)
+  local handle = self.handle
+  if handle then
+    local data = ctype()
+    local size = ffi.sizeof(ctype)
+    local io = ffi.new("IO_STATUS_BLOCK[1]")
+    local err = ntdll.NtQueryVolumeInformationFile(handle, io, data, size, infoClass)
+    if NT_SUCCESS(err) then
+      return ffi.cast(ctypePtr, data)
+    elseif IS_STATUS(err, STATUS_BUFFER_OVERFLOW) and infoClass == ffi.C.FileNameInformation then
+      size = data.FileNameLength + ffi.sizeof("ULONG") + 2
+      data = ffi.new("char[?]", size)
+      if data then
+        err = ntdll.NtQueryVolumeInformationFile(handle, io, data, size, infoClass)
+        if NT_SUCCESS(err) then
+          return ffi.cast(ctypePtr, data)
+        end
+      end
+    end
+  end
+end
+
 --- Set file information
 -- @param infoClass `FILE_INFORMATION_CLASS`
 -- @param info corresponding information structure
@@ -310,6 +357,27 @@ function Methods:setInfo(infoClass, info, infoSize)
   end
 
   return false
+end
+
+--- Send IOCTL to the device
+-- @param code IOCTL code
+-- @param inBuf input buffer
+-- @param outBuf output buffer
+-- @param outBytes number of returned bytes
+-- @return nonzero in case of success
+-- @function setInfo
+function Methods:ioctl(code, inBuf, outBuf, outBytes)
+  local outBytes = outBytes or ffi.new("DWORD[1]")
+  return ffi.C.DeviceIoControl(
+    self.handle,
+    code,
+    inBuf,
+    inBuf and ffi.sizeof(inBuf) or 0,
+    outBuf,
+    outBuf and ffi.sizeof(outBuf) or 0,
+    outBytes,
+    nil
+  )
 end
 
 --- Delete the file
