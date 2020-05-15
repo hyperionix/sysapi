@@ -1,3 +1,3 @@
-require "file.path"
+require "file.Path"
 require "file.Resources"
 require "file.File"

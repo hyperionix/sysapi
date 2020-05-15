@@ -281,8 +281,9 @@ function M.current()
 end
 
 --- Is the handle is the current process
--- return boolean
--- @functino Process.isCurrentProcess`
+-- @int handle handle of the process
+-- @return boolean
+-- @function Process.isCurrentProcess
 function M.isCurrentProcess(handle)
   return ffi.C.GetProcessId(handle) == ffi.C.GetCurrentProcessId()
 end
