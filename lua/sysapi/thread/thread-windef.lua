@@ -21,6 +21,8 @@ ffi.cdef [[
 ]]
 
 ffi.cdef [[
+  DWORD GetCurrentThreadId();
+
   HANDLE CreateRemoteThread(
     HANDLE                 hProcess,
     LPSECURITY_ATTRIBUTES  lpThreadAttributes,

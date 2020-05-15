@@ -110,6 +110,11 @@ FILE_DISPOSITION_FORCE_IMAGE_SECTION_CHECK = 0x00000004
 FILE_DISPOSITION_ON_CLOSE = 0x00000008
 FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE = 0x00000010
 
+FILE_ANY_ACCESS = 0
+FILE_SPECIAL_ACCESS = FILE_ANY_ACCESS
+FILE_READ_ACCESS = 0x0001
+FILE_WRITE_ACCESS = 0x0002
+
 ffi.cdef [[
   typedef enum _FILE_INFORMATION_CLASS {
     FileDirectoryInformation = 1,
@@ -253,6 +258,28 @@ ffi.cdef [[
   typedef struct _FILE_DISPOSITION_INFORMATION_EX {
     ULONG Flags;
   } FILE_DISPOSITION_INFORMATION_EX, *PFILE_DISPOSITION_INFORMATION_EX;
+
+  typedef enum _FS_INFORMATION_CLASS {
+      FileFsVolumeInformation = 1,
+      FileFsLabelInformation,
+      FileFsSizeInformation,
+      FileFsDeviceInformation,
+      FileFsAttributeInformation,
+      FileFsControlInformation,
+      FileFsFullSizeInformation,
+      FileFsObjectIdInformation,
+      FileFsDriverPathInformation,
+      FileFsVolumeFlagsInformation,
+      FileFsSectorSizeInformation, // since WIN8
+      FileFsDataCopyInformation,
+      FileFsMetadataSizeInformation, // since THRESHOLD
+      FileFsMaximumInformation
+  } FS_INFORMATION_CLASS, *PFS_INFORMATION_CLASS;
+
+  typedef struct _FILE_FS_DEVICE_INFORMATION {
+    ULONG DeviceType; // DEVICE_TYPE
+    ULONG Characteristics;
+  } FILE_FS_DEVICE_INFORMATION, *PFILE_FS_DEVICE_INFORMATION;
 ]]
 
 ffi.cdef [[
@@ -271,6 +298,14 @@ ffi.cdef [[
     LPVOID       lpBuffer,
     DWORD        nNumberOfBytesToRead,
     LPDWORD      lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped
+  );
+
+  BOOL WriteFile(
+    HANDLE       hFile,
+    LPCVOID      lpBuffer,
+    DWORD        nNumberOfBytesToWrite,
+    LPDWORD      lpNumberOfBytesWritten,
     LPOVERLAPPED lpOverlapped
   );
 
@@ -320,6 +355,14 @@ ffi.cdef [[
     PVOID                  FileInformation,
     ULONG                  Length,
     FILE_INFORMATION_CLASS FileInformationClass
+  );
+
+  NTSTATUS NtQueryVolumeInformationFile(
+    HANDLE               FileHandle,
+    PIO_STATUS_BLOCK     IoStatusBlock,
+    PVOID                FsInformation,
+    ULONG                Length,
+    FS_INFORMATION_CLASS FsInformationClass
   );
 
   BOOL DeleteFileA(

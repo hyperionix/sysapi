@@ -26,4 +26,22 @@ function M.toHumanReadable(ts)
   return date("%c", ts)
 end
 
+--- Convert nanoseconds to microseconds
+-- @function time.nsToUs
+function M.nsToUs(ns)
+  return ns / (1000)
+end
+
+--- Convert nanoseconds to milliseconds
+-- @function time.nsToMs
+function M.nsToMs(ns)
+  return ns / (1000 * 1000)
+end
+
+--- Convert nanoseconds to seconds
+-- @function time.nsToSec
+function M.nsToSec(ns)
+  return ns / (1000 * 1000 * 1000)
+end
+
 return M

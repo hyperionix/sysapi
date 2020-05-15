@@ -2,7 +2,9 @@
 --
 -- @module bytebuf
 -- @pragma nostrip
+setfenv(1, require "sysapi-ns")
 local tonumber = tonumber
+local sformat = string.format
 local schar = string.char
 local ffi = require "ffi"
 local M = {}
@@ -24,6 +26,21 @@ function M.create(s)
       end
     )
   )
+end
+
+function M.dump(ptr, size, as)
+  local as = as or "intptr_t"
+  ptr = ffi.cast(as .. "*", ptr)
+  local data = ""
+  local typeSize = ffi.sizeof(as)
+  for i = 0, size - 1 do
+    if i % (16 / typeSize) == 0 then
+      data = data .. sformat("\n0x%X: ", toaddress(ptr))
+    end
+    data = data .. sformat("%0" .. typeSize * 2 .. "X ", tonumber(ptr[0]))
+    ptr = ptr + 1
+  end
+  return data
 end
 
 return M

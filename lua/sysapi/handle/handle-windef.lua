@@ -39,6 +39,54 @@ ffi.cdef [[
   typedef DWORD ACCESS_MASK;
   typedef ACCESS_MASK* PACCESS_MASK;
 
+  typedef struct _GENERIC_MAPPING {
+    ACCESS_MASK GenericRead;
+    ACCESS_MASK GenericWrite;
+    ACCESS_MASK GenericExecute;
+    ACCESS_MASK GenericAll;
+  } GENERIC_MAPPING;
+
+  typedef struct _OBJECT_TYPE_INFORMATION {
+      UNICODE_STRING TypeName;
+      ULONG TotalNumberOfObjects;
+      ULONG TotalNumberOfHandles;
+      ULONG TotalPagedPoolUsage;
+      ULONG TotalNonPagedPoolUsage;
+      ULONG TotalNamePoolUsage;
+      ULONG TotalHandleTableUsage;
+      ULONG HighWaterNumberOfObjects;
+      ULONG HighWaterNumberOfHandles;
+      ULONG HighWaterPagedPoolUsage;
+      ULONG HighWaterNonPagedPoolUsage;
+      ULONG HighWaterNamePoolUsage;
+      ULONG HighWaterHandleTableUsage;
+      ULONG InvalidAttributes;
+      GENERIC_MAPPING GenericMapping;
+      ULONG ValidAccessMask;
+      BOOLEAN SecurityRequired;
+      BOOLEAN MaintainHandleCount;
+      UCHAR TypeIndex; // since WINBLUE
+      CHAR ReservedByte;
+      ULONG PoolType;
+      ULONG DefaultPagedPoolCharge;
+      ULONG DefaultNonPagedPoolCharge;
+  } OBJECT_TYPE_INFORMATION, *POBJECT_TYPE_INFORMATION;
+
+  typedef struct _OBJECT_NAME_INFORMATION {
+    UNICODE_STRING Name;
+  } OBJECT_NAME_INFORMATION, *POBJECT_NAME_INFORMATION;
+
+  typedef enum _OBJECT_INFORMATION_CLASS {
+      ObjectBasicInformation, // OBJECT_BASIC_INFORMATION
+      ObjectNameInformation, // OBJECT_NAME_INFORMATION
+      ObjectTypeInformation, // OBJECT_TYPE_INFORMATION
+      ObjectTypesInformation, // OBJECT_TYPES_INFORMATION
+      ObjectHandleFlagInformation, // OBJECT_HANDLE_FLAG_INFORMATION
+      ObjectSessionInformation,
+      ObjectSessionObjectInformation,
+      MaxObjectInfoClass
+  } OBJECT_INFORMATION_CLASS;
+
   typedef struct _OBJECT_ATTRIBUTES {
     ULONG           Length;
     HANDLE          RootDirectory;
@@ -50,6 +98,15 @@ ffi.cdef [[
 ]]
 
 ffi.cdef [[
+  NTSTATUS
+  NtQueryObject(
+    HANDLE Handle,
+    OBJECT_INFORMATION_CLASS ObjectInformationClass,
+    PVOID ObjectInformation,
+    ULONG ObjectInformationLength,
+    PULONG ReturnLength
+  );
+
   BOOL CloseHandle(
     HANDLE hObject
   );

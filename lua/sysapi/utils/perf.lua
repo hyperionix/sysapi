@@ -1,4 +1,5 @@
 setfenv(1, require "sysapi-ns")
+local time = require "time.time"
 local M = {}
 
 ffi.cdef [[
@@ -29,7 +30,7 @@ function M.timeme(func)
   return ((qpc() - start) / qpf()) * 1000 * 1000 * 1000
 end
 
-function M.measure(func, iterCnt)
+function M.measure(func, iterCnt, factor)
   local t =
     M.timeme(
     function()
@@ -39,7 +40,28 @@ function M.measure(func, iterCnt)
     end
   )
 
-  return t
+  if factor == "us" then
+    return time.nsToUs(t)
+  elseif factor == "ms" then
+    return time.nsToMs(t)
+  elseif factor == "sec" then
+    return time.nsToSec(t)
+  else
+    return t
+  end
+end
+
+---@class BenchmarkResult
+---@field total integer
+---@field rate integer
+local BenchmarkResult = {}
+
+---@param func any
+---@param iterCnt any
+---@return BenchmarkResult
+function M.measure2(func, iterCnt, factor)
+  local t = M.measure(func, iterCnt, factor)
+  return {total = t, rate = t / iterCnt}
 end
 
 return M
