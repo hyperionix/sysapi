@@ -17,12 +17,21 @@ ffi.cdef [[
   typedef intptr_t LONG_PTR;
   typedef uintptr_t ULONG_PTR;
   typedef size_t SIZE_T, *PSIZE_T;
-  typedef wchar_t WCHAR, *PWCHAR, *PWCH, *LPWSTR;
-
   typedef int errno_t;
+  typedef long HRESULT;
 
-  typedef const char    *LPCSTR;
+  typedef const char *LPCSTR, *LPCCH, *PCCH;;
+  typedef CHAR *NPSTR, *LPSTR, *PSTR;
+  typedef PSTR *PZPSTR;
+  typedef const PSTR *PCZPSTR;
+  typedef const CHAR *LPCSTR, *PCSTR;
+  typedef PCSTR *PZPCSTR;
+  typedef const PCSTR *PCZPCSTR;
+  
+  typedef wchar_t WCHAR, *PWCHAR, *PWCH, *PWSTR, *LPWSTR;
+  typedef WCHAR *PWCHAR, *LPWCH, *PWCH;
   typedef const wchar_t *LPCWSTR, *PCWSTR;
+  typedef const WCHAR *LPCWCH, *PCWCH;
 
   typedef VOID *PVOID, *LPVOID;
   typedef const VOID* LPCVOID;
@@ -44,6 +53,8 @@ ffi.cdef [[
   typedef PVOID HANDLE, *PHANDLE, *LPHANDLE;
   typedef PVOID HINSTANCE;
   typedef HINSTANCE HMODULE;
+
+  typedef PVOID LPUNKNOWN;
 
   typedef DWORD (*PTHREAD_START_ROUTINE)(
     LPVOID lpThreadParameter

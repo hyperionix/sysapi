@@ -32,4 +32,8 @@ function Crypto:Hash(hashName)
   return Hash.new(self.handle, hashName)
 end
 
+function Crypto.isSupportedHash(name)
+  return Hash.isSupported(name)
+end
+
 return Crypto

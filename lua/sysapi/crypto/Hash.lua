@@ -31,6 +31,10 @@ function CryptoHash.new(providerHandle, hashName)
   end
 end
 
+function CryptoHash.isSupported(name)
+  return HASH_NAME_TO_ID[name] ~= nil
+end
+
 --- Update CryptoHash object hash value with data
 function CryptoHash:update(data, size)
   if type(data) == "string" then
@@ -40,6 +44,7 @@ function CryptoHash:update(data, size)
   end
 
   advapi32.CryptHashData(self.handle, data, size, 0)
+  return self
 end
 
 --- Return the digest of the hash

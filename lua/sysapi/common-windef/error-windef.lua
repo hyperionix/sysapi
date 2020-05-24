@@ -8,6 +8,7 @@ ffi.cdef [[
   );
 ]]
 
+S_OK = 0
 ERROR_SUCCESS = 0
 ERROR_INVALID_FUNCTION = 1
 ERROR_FILE_NOT_FOUND = 2
