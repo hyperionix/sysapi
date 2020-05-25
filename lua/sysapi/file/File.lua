@@ -10,6 +10,7 @@ local time = require "time.time"
 local cert = require "crypto.cert"
 local stringify = require "utils.stringify"
 local tcache = require "utils.ctype-cache"
+local band = bit.band
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
 
@@ -219,6 +220,9 @@ function M.create(path, disp, access, attr, share)
 end
 
 function M.fromTable(kwargs)
+  if kwargs.fullPath and kwargs.fullPath:sub(1, 4) == [[\??\]] then
+    kwargs.fullPath = kwargs.fullPath:sub(5)
+  end
   return setmetatable(kwargs, MT)
 end
 
@@ -265,6 +269,14 @@ function M.stringifyAttributes(attrs)
   return stringify.mask(attrs, FILE_ATTRIBUTE_STRINGIFY_TABLE)
 end
 
+--- Returns `true` is a given access mask has write access bit
+-- @int access access mask
+-- @return `true` or `false`
+-- @function File.stringifyAttributes
+function M.isWriteAccess(access)
+  return band(access, FILE_WRITE_DATA) ~= 0 or band(access, FILE_APPEND_DATA) ~= 0 or band(access, GENERIC_WRITE) ~= 0
+end
+
 function M._getGetters()
   return Getters
 end
@@ -278,16 +290,30 @@ end
 -- @function read
 function Methods:read(readSize)
   readSize = readSize or self.size
-  local fileData = ffi.new("char[?]", readSize)
-  local outBytes = ffi.new("DWORD[1]")
-  if ffi.C.ReadFile(self.handle, fileData, readSize, outBytes, nil) then
-    return ffi.string(fileData, outBytes[0])
+  if readSize and readSize ~= 0 then
+    local fileData = ffi.new("char[?]", readSize)
+    local outBytes = ffi.new("DWORD[1]")
+    if ffi.C.ReadFile(self.handle, fileData, readSize, outBytes, nil) then
+      return ffi.string(fileData, outBytes[0])
+    end
+  else
+    return ""
   end
 end
 
 function Methods:write(data, size)
   local outBytes = ffi.new("DWORD[1]")
   return ffi.C.WriteFile(self.handle, data, size or #data, outBytes, nil)
+end
+
+--- Returns true if the file is a directory
+-- @return true if the file is directory, false otherwise
+function Methods:isDirectory()
+  if self._standardInfo then
+    return self._standardInfo.Directory == 1 and true or false
+  else
+    return false
+  end
 end
 
 --- Query information about the file

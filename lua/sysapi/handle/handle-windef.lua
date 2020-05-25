@@ -46,6 +46,20 @@ ffi.cdef [[
     ACCESS_MASK GenericAll;
   } GENERIC_MAPPING;
 
+  typedef struct _OBJECT_BASIC_INFORMATION {
+      ULONG Attributes;
+      ACCESS_MASK GrantedAccess;
+      ULONG HandleCount;
+      ULONG PointerCount;
+      ULONG PagedPoolCharge;
+      ULONG NonPagedPoolCharge;
+      ULONG Reserved[3];
+      ULONG NameInfoSize;
+      ULONG TypeInfoSize;
+      ULONG SecurityDescriptorSize;
+      LARGE_INTEGER CreationTime;
+  } OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;  
+
   typedef struct _OBJECT_TYPE_INFORMATION {
       UNICODE_STRING TypeName;
       ULONG TotalNumberOfObjects;

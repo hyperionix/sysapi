@@ -4,4 +4,6 @@ ffi.cdef [[
   void Sleep(
     DWORD dwMilliseconds
   );
+
+  void DebugBreak();
 ]]
