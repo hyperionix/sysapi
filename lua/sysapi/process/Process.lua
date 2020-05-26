@@ -288,6 +288,41 @@ function M.isCurrentProcess(handle)
   return ffi.C.GetProcessId(handle) == ffi.C.GetCurrentProcessId()
 end
 
+--- Enumerate processes in the system
+-- @return iterator to enumerate processes
+-- @function Process.list
+function M.list()
+  local entry = ffi.new("PROCESSENTRY32[1]")
+  entry[0].dwSize = ffi.sizeof(entry)
+
+  local snapshot
+  if snapshot ~= INVALID_HANDLE_VALUE then
+    return function()
+      if not snapshot then
+        snapshot = ffi.C.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+        if snapshot == INVALID_HANDLE_VALUE then
+          return
+        end
+
+        ffi.gc(snapshot, ffi.C.CloseHandle)
+
+        if ffi.C.Process32First(snapshot, entry[0]) ~= 0 then
+          return ffi.string(entry[0].szExeFile), entry[0]
+        else
+          ffi.C.CloseHandle(ffi.gc(snapshot, nil))
+          return
+        end
+      else
+        if ffi.C.Process32Next(snapshot, entry[0]) ~= 0 then
+          return ffi.string(entry[0].szExeFile), entry[0]
+        else
+          ffi.C.CloseHandle(ffi.gc(snapshot, nil))
+        end
+      end
+    end
+  end
+end
+
 function M._getGetters()
   return Getters
 end
