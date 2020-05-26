@@ -1,3 +1,4 @@
+setfenv(1, require "sysapi-ns")
 local Crypto = require "crypto.crypto"
 local cert = require "crypto.cert"
 local crypto = Crypto.new()
@@ -19,3 +20,7 @@ print(status)
 for i = 1, #signers do
   print(signers[i])
 end
+
+local key = crypto:genKeyPair(CALG_RSA_KEYX)
+local k = crypto:exportKey(key, PRIVATEKEYBLOB)
+print(#k)

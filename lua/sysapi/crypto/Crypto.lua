@@ -5,6 +5,7 @@
 setfenv(1, require "sysapi-ns")
 require "crypto.crypto-windef"
 local Hash = require "crypto.Hash"
+local bor = bit.bor
 
 local advapi32 = ffi.load("advapi32")
 
@@ -30,6 +31,23 @@ end
 -- @return new @{CryptoHash} object
 function Crypto:Hash(hashName)
   return Hash.new(self.handle, hashName)
+end
+
+function Crypto:genKeyPair(algo)
+  local key = ffi.new("HCRYPTKEY[1]")
+  if advapi32.CryptGenKey(self.handle, algo, bor(0x08000000, CRYPT_EXPORTABLE), key) ~= 0 then
+    return ffi.gc(key, advapi32.CryptDestroyKey)[0]
+  end
+end
+
+function Crypto:exportKey(key, keyType)
+  local size = ffi.new("DWORD[1]", 0)
+  if advapi32.CryptExportKey(key, 0, keyType, 0, nil, size) ~= 0 then
+    local blob = ffi.new("BYTE[?]", size[0])
+    if advapi32.CryptExportKey(key, 0, keyType, 0, blob, size) ~= 0 then
+      return ffi.string(blob, size[0])
+    end
+  end
 end
 
 function Crypto.isSupportedHash(name)
