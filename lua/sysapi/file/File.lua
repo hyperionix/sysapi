@@ -30,6 +30,8 @@ local Methods = {
   attributes = nil,
   --- file device type
   deviceType = nil,
+  --- file device characteristics
+  deviceCharacteristics = nil,
   --- change time
   changeTime = nil,
   --- create time
@@ -164,6 +166,12 @@ end
 function Getters.deviceType(obj, name)
   if obj._deviceInfo then
     return obj._deviceInfo.DeviceType
+  end
+end
+
+function Getters.deviceCharacteristics(obj, name)
+  if obj._deviceInfo then
+    return obj._deviceInfo.Characteristics
   end
 end
 
