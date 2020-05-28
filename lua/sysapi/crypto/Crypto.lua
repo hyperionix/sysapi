@@ -5,6 +5,7 @@
 setfenv(1, require "sysapi-ns")
 require "crypto.crypto-windef"
 local Hash = require "crypto.Hash"
+local Key = require "crypto.Key"
 local bor = bit.bor
 
 local advapi32 = ffi.load("advapi32")
@@ -26,6 +27,13 @@ function Crypto.new(providerType)
   end
 end
 
+--- Create new Crypto object from valid provider handle
+-- @param handle HCRYPTPROV object
+-- @return New Crypto object
+function Crypto.fromHandle(handle)
+  return setmetatable({handle = handle}, Crypto_MT)
+end
+
 --- Create new @{CryptoHash} object
 -- @param hashName name of the hash, could be `"md5"`, `"sha1"`or `"sha256"`
 -- @return new @{CryptoHash} object
@@ -33,25 +41,30 @@ function Crypto:Hash(hashName)
   return Hash.new(self.handle, hashName)
 end
 
-function Crypto:genKeyPair(algo)
-  local key = ffi.new("HCRYPTKEY[1]")
-  if advapi32.CryptGenKey(self.handle, algo, bor(0x08000000, CRYPT_EXPORTABLE), key) ~= 0 then
-    return ffi.gc(key, advapi32.CryptDestroyKey)[0]
-  end
-end
-
-function Crypto:exportKey(key, keyType)
-  local size = ffi.new("DWORD[1]", 0)
-  if advapi32.CryptExportKey(key, 0, keyType, 0, nil, size) ~= 0 then
-    local blob = ffi.new("BYTE[?]", size[0])
-    if advapi32.CryptExportKey(key, 0, keyType, 0, blob, size) ~= 0 then
-      return ffi.string(blob, size[0])
-    end
-  end
-end
-
 function Crypto.isSupportedHash(name)
   return Hash.isSupported(name)
+end
+
+--- Generate new {@CryptoKey} object
+-- @param algo CryptGenKey algId parameter
+-- @param flags default 0 or dwFlags of CryptGenKey
+-- @return new @{CryptoKey} object
+function Crypto:Key(algo, flags)
+  return Key.new(self.handle, algo, flags)
+end
+
+--- Initialize new {@CryptoKey} object from existing key handle
+-- @param handle key handle
+-- @return new @{CryptoKey} object
+function Crypto:KeyFromHandle(handle)
+  return Key.newFromHandle(handle)
+end
+
+--- Import key blob
+-- @param blob key blob data
+-- @return new @{CryptoKey} object
+function Crypto:KeyImport(blob)
+  return Key.import(self.handle, blob)
 end
 
 return Crypto

@@ -1,6 +1,7 @@
 setfenv(1, require "sysapi-ns")
 local Crypto = require "crypto.crypto"
 local cert = require "crypto.cert"
+local stringify = require "utils.stringify"
 local crypto = Crypto.new()
 
 local hash = crypto:Hash("md5")
@@ -21,6 +22,40 @@ for i = 1, #signers do
   print(signers[i])
 end
 
-local key = crypto:genKeyPair(CALG_RSA_KEYX)
-local k = crypto:exportKey(key, PRIVATEKEYBLOB)
-print(#k)
+local function testKey(algo, blobType, blobCheck)
+  local key = crypto:Key(algo, CRYPT_EXPORTABLE)
+  assert(key)
+  local blob = key:export(blobType)
+  assert(blob)
+  blobCheck(blob)
+end
+
+testKey(
+  CALG_RC4,
+  PLAINTEXTKEYBLOB,
+  function(blob)
+    assert(blob.hdr.bType == PLAINTEXTKEYBLOB)
+    assert(blob.hdr.aiKeyAlg == CALG_RC4)
+    assert(blob.dwKeySize == 16)
+  end
+)
+
+testKey(
+  CALG_AES_256,
+  PLAINTEXTKEYBLOB,
+  function(blob)
+    assert(blob.hdr.bType == PLAINTEXTKEYBLOB)
+    assert(blob.hdr.aiKeyAlg == CALG_AES_256)
+    assert(blob.dwKeySize, 256 / 8)
+  end
+)
+
+testKey(
+  CALG_RSA_KEYX,
+  PRIVATEKEYBLOB,
+  function(blob)
+    assert(blob.hdr.bType == PRIVATEKEYBLOB)
+    assert(blob.hdr.aiKeyAlg == CALG_RSA_KEYX)
+    assert(blob.pubkey.bitlen == 1024)
+  end
+)

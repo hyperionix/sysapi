@@ -5,6 +5,7 @@ DECLARE_HANDLE("HWND")
 -- Crypto algorithms identifiers
 -- https://docs.microsoft.com/ru-ru/windows/desktop/SecCrypto/alg-id
 
+StringifyTableStart("CALG", "CALG_")
 CALG_MD2 = 0x00008001
 CALG_MD4 = 0x00008002
 CALG_MD5 = 0x00008003
@@ -43,6 +44,7 @@ CALG_ECDH_EPHEM = 0x0000ae06
 CALG_ECMQV = 0x0000a001 -- Not supported
 CALG_KEA_KEYX = 0x0000aa04 -- Not supported
 CALG_ECDSA = 0x00002203
+StringifyTableEnd()
 
 -- Cryptographic Provider Types
 -- https://docs.microsoft.com/ru-ru/windows/desktop/SecCrypto/cryptographic-provider-types
@@ -179,6 +181,30 @@ ffi.cdef [[
   typedef ULONG_PTR HCRYPTHASH;
   typedef ULONG_PTR HCRYPTKEY;
   typedef UINT ALG_ID;
+
+  typedef struct _PUBLICKEYSTRUC {
+    BYTE   bType;
+    BYTE   bVersion;
+    WORD   reserved;
+    ALG_ID aiKeyAlg;
+  } BLOBHEADER, PUBLICKEYSTRUC;
+
+  typedef struct _PLAINTEXTKEYBLOB {
+    BLOBHEADER hdr;
+    DWORD      dwKeySize;
+    BYTE       rgbKeyData[];
+  } PLAINTEXTKEYBLOB, *PPLAINTEXTKEYBLOB;
+
+  typedef struct _RSAPUBKEY {
+    DWORD magic;
+    DWORD bitlen;
+    DWORD pubexp;
+  } RSAPUBKEY;
+
+  typedef struct _PRIVATEKEYBLOB {
+    PUBLICKEYSTRUC hdr;
+    RSAPUBKEY pubkey;
+  } PRIVATEKEYBLOB, *PPRIVATEKEYBLOB;
 ]]
 
 ffi.cdef [[
@@ -209,6 +235,15 @@ ffi.cdef [[
     DWORD     dwFlags,
     BYTE      *pbData,
     DWORD     *pdwDataLen
+  );
+
+  BOOL CryptImportKey(
+    HCRYPTPROV hProv,
+    const BYTE *pbData,
+    DWORD      dwDataLen,
+    HCRYPTKEY  hPubKey,
+    DWORD      dwFlags,
+    HCRYPTKEY  *phKey
   );
 
   BOOL CryptDestroyKey(

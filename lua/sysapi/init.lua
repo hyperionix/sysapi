@@ -21,6 +21,23 @@ SYSAPI = {
   _VERSION = "1.0"
 }
 
+function string.startswith(str, start)
+  return str:sub(1, #start) == start
+end
+
+function string.endswith(str, ending)
+  return ending == "" or str:sub(-(#ending)) == ending
+end
+
+function string.interpolate(s, tab)
+  return (s:gsub(
+    "($%b{})",
+    function(w)
+      return tab[w:sub(3, -2)] or w
+    end
+  ))
+end
+
 -- XXX: We have to do all require due to nature of loading sysapi as package of Hyperionix (https://hyperionix.com)
 require "common-windef"
 require "utils"

@@ -453,4 +453,9 @@ ffi.cdef [[
     LPCSTR lpNewFileName
   );
 
+  BOOL CopyFileA(
+    LPCSTR lpExistingFileName,
+    LPCSTR lpNewFileName,
+    BOOL   bFailIfExists
+  );
 ]]

@@ -96,6 +96,9 @@ end
 function M.mask(mask, tableOrName)
   if type(tableOrName) == "string" then
     tableOrName = allStringifyTables[tableOrName]
+    if not tableOrName then
+      return ""
+    end
   end
 
   local res = ""
