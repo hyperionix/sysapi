@@ -15,7 +15,7 @@ local M = {}
 -- @return UNIX timestamp
 -- @function time.toUnixTimestamp
 function M.toUnixTimestamp(ft)
-  return tonumber((ft - EPOCH_BIAS) / TICKS_PER_SEC)
+  return tonumber((ft - EPOCH_BIAS) / TICKS_PER_USEC)
 end
 
 --- Convert UNIX timestamp to human readable representation
