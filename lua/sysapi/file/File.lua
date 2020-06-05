@@ -108,6 +108,10 @@ function Getters.fullPath(obj, name)
 end
 
 function Getters.handle(obj, name)
+  if not obj.openPath and not obj.fullPath then
+    return
+  end
+
   local handle =
     ffi.C.CreateFileA(
     obj.openPath or obj.fullPath,
@@ -189,15 +193,19 @@ function Getters.attributes(obj, name)
 end
 
 function Getters.signStatus(obj, name)
-  local signStatus = obj._certInfo.signStatus
-  rawset(obj, name, signStatus)
-  return signStatus
+  if obj._certInfo then
+    local signStatus = obj._certInfo.signStatus
+    rawset(obj, name, signStatus)
+    return signStatus
+  end
 end
 
 function Getters.signers(obj, name)
-  local signers = obj._certInfo.signers
-  rawset(obj, name, signers)
-  return signers
+  if obj._certInfo then
+    local signers = obj._certInfo.signers
+    rawset(obj, name, signers)
+    return signers
+  end
 end
 
 --- Constructors
@@ -306,6 +314,21 @@ function Methods:read(readSize)
     end
   else
     return ""
+  end
+end
+
+--- Set file pointer to a given position
+-- @int pos pointer position
+-- @int method - FILE_BEGIN, FILE_CURRENT or FILE_END
+-- @return true or false
+-- @function seek
+function Methods:seek(pos, method)
+  local li = ffi.new("LARGE_INTEGER")
+  li.QuadPart = pos
+  if ffi.C.SetFilePointerEx(self.handle, li, nil, method or FILE_BEGIN) ~= 0 then
+    return true
+  else
+    return false
   end
 end
 

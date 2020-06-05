@@ -51,6 +51,13 @@ function RegKey:open(parentKeyHandle, keyName, access, options)
   end
 end
 
+--- Deletes a subkey and its values
+-- @param subKeyName name of the key
+-- @return 0 on success
+function RegKey:delete(subKeyName)
+  return advapi32.RegDeleteKeyA(self.handle, subKeyName)
+end
+
 --- Get value of the key
 -- @param valueName name of the value
 -- @param[opt=nil] subKeyName subkey of the key to get value from
@@ -86,6 +93,13 @@ end
 -- @return 0 on success
 function RegKey:setVal(valueName, valueType, data, size, subKeyName)
   return advapi32.RegSetKeyValueA(self.handle, subKeyName, valueName, valueType, data, size)
+end
+
+--- Removes a named value
+-- @param valueName name of the value to be removed
+-- @return 0 on success
+function RegKey:deleteValue(valueName)
+  return advapi32.RegDeleteValueA(self.handle, valueName)
 end
 
 --- Get the size of the key's subkey with the longest name

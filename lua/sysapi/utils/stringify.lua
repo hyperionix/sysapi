@@ -24,15 +24,19 @@ end
 -- print(stringify.value(1, "MY_TABLE")) -- will print "VALUE_1"
 function StringifyTableStart(name, trimStart, trimEnd)
   local prevEnv = getfenv(2)
-  local newEnv = {
-    getfenv = getfenv,
-    setfenv = setfenv,
-    prevEnv = prevEnv,
-    tableName = name,
-    trimStart = trimStart,
-    trimEnd = trimEnd,
-    StringifyTableEnd = StringifyTableEnd
-  }
+  local newEnv =
+    setmetatable(
+    {
+      getfenv = getfenv,
+      setfenv = setfenv,
+      prevEnv = prevEnv,
+      tableName = name,
+      trimStart = trimStart,
+      trimEnd = trimEnd,
+      StringifyTableEnd = StringifyTableEnd
+    },
+    {__index = prevEnv}
+  )
   setfenv(2, newEnv)
 end
 
@@ -105,7 +109,8 @@ function M.mask(mask, tableOrName)
   local bitPos = 0
   while mask ~= 0 do
     if band(mask, 1) ~= 0 then
-      res = res .. tableOrName[lshift(1, bitPos)] .. " "
+      local strValue = tableOrName[lshift(1, bitPos)] or ""
+      res = res .. strValue .. " "
     end
 
     mask = rshift(mask, 1)

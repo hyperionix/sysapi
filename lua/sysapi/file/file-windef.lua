@@ -25,6 +25,10 @@ FILE_OVERWRITTEN = 0x00000003
 FILE_EXISTS = 0x00000004
 FILE_DOES_NOT_EXIST = 0x00000005
 
+FILE_BEGIN = 0
+FILE_CURRENT = 1
+FILE_END = 2
+
 -- Access rights to files and directories
 -- https://docs.microsoft.com/ru-ru/windows/desktop/FileIO/file-access-rights-constants
 
@@ -334,6 +338,10 @@ ffi.cdef [[
     DWORD   dwFileDateLS;
   } VS_FIXEDFILEINFO;
 
+  typedef struct _FILE_DISPOSITION_INFORMATION {
+    BOOLEAN DeleteFile;
+  } FILE_DISPOSITION_INFORMATION, *PFILE_DISPOSITION_INFORMATION;
+
   typedef struct _FILE_DISPOSITION_INFORMATION_EX {
     ULONG Flags;
   } FILE_DISPOSITION_INFORMATION_EX, *PFILE_DISPOSITION_INFORMATION_EX;
@@ -405,6 +413,13 @@ ffi.cdef [[
     DWORD  dwHandle,
     DWORD  dwLen,
     LPVOID lpData
+  );
+
+  BOOL SetFilePointerEx(
+    HANDLE         hFile,
+    LARGE_INTEGER  liDistanceToMove,
+    PLARGE_INTEGER lpNewFilePointer,
+    DWORD          dwMoveMethod
   );
 
   DWORD GetFileVersionInfoSizeA(

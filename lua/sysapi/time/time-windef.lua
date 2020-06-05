@@ -2,6 +2,8 @@ setfenv(1, require "sysapi-ns")
 
 EPOCH_BIAS = 116444736000000000
 TICKS_PER_SEC = 10000000
+TICKS_PER_MSEC = 10000
+TICKS_PER_USEC = 10
 
 ffi.cdef [[
   typedef struct _FILETIME {

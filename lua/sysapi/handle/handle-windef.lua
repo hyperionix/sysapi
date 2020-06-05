@@ -3,6 +3,9 @@ local bor = bit.bor
 
 INVALID_HANDLE_VALUE = ffi.cast("HANDLE", -1)
 
+-- MaximumAllowed access type
+MAXIMUM_ALLOWED = 0x02000000
+
 -- These are the generic rights
 -- https://docs.microsoft.com/ru-ru/windows/desktop/SecAuthZ/generic-access-rights
 GENERIC_READ = 0x80000000
@@ -58,7 +61,7 @@ ffi.cdef [[
       ULONG TypeInfoSize;
       ULONG SecurityDescriptorSize;
       LARGE_INTEGER CreationTime;
-  } OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;  
+  } OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
 
   typedef struct _OBJECT_TYPE_INFORMATION {
       UNICODE_STRING TypeName;
