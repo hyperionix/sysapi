@@ -32,6 +32,11 @@ STANDARD_RIGHTS_ALL = 0x001F0000
 
 SPECIFIC_RIGHTS_ALL = 0x0000FFFF
 
+-- Options action for DuplicateHandle
+-- https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-duplicatehandle
+DUPLICATE_CLOSE_SOURCE = 0x00000001
+DUPLICATE_SAME_ACCESS = 0x00000002
+
 -- #define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
 function DECLARE_HANDLE(name)
   local decl = string.format("struct %s__{int unused;}; typedef struct %s__ *%s;", name, name, name)
