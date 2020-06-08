@@ -56,7 +56,7 @@ ffi.cdef [[
     HANDLE hThread;
     DWORD  dwProcessId;
     DWORD  dwThreadId;
-  } PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;  
+  } PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
   typedef struct _KERNEL_USER_TIMES {
       LARGE_INTEGER CreateTime;
@@ -319,7 +319,7 @@ ffi.cdef [[
     ULONG ProcessGroupId;
     ULONG LoaderThreads;
 
-    UNICODE_STRING RedirectionDllName; 
+    UNICODE_STRING RedirectionDllName;
     UNICODE_STRING HeapPartitionName;
     ULONG_PTR DefaultThreadpoolCpuSetMasks;
     ULONG DefaultThreadpoolCpuSetMaskCount;
@@ -335,7 +335,7 @@ ffi.cdef [[
       PsCreateSuccess,
       PsCreateMaximumStates
   } PS_CREATE_STATE;
-  
+
   typedef struct _PS_CREATE_INFO {
       SIZE_T Size;
       PS_CREATE_STATE State;
@@ -360,25 +360,25 @@ ffi.cdef [[
               };
               ACCESS_MASK AdditionalFileAccess;
           } InitState;
-  
+
           // PsCreateFailOnSectionCreate
           struct
           {
               HANDLE FileHandle;
           } FailSection;
-  
+
           // PsCreateFailExeFormat
           struct
           {
               USHORT DllCharacteristics;
           } ExeFormat;
-  
+
           // PsCreateFailExeName
           struct
           {
               HANDLE IFEOKey;
           } ExeName;
-  
+
           // PsCreateSuccess
           struct
           {

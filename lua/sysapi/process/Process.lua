@@ -72,7 +72,11 @@ function Getters._extendedBasicInfo(obj, name)
     obj:queryInfo(
     ffi.C.ProcessBasicInformation,
     tcache.PROCESS_EXTENDED_BASIC_INFORMATION,
-    tcache.PPROCESS_EXTENDED_BASIC_INFORMATION
+    tcache.PPROCESS_EXTENDED_BASIC_INFORMATION,
+    nil,
+    function(data)
+      data.Size = ffi.sizeof(tcache.PROCESS_EXTENDED_BASIC_INFORMATION)
+    end
   )
   rawset(obj, name, info)
   return info
@@ -334,18 +338,52 @@ function Methods:_getPolicy(policyType, ctype, ctypePtr)
   end
 end
 
+function Methods:_tryRaiseHandleRights()
+  local dupHandle = ffi.new("HANDLE[1]")
+  local ret =
+    ffi.C.DuplicateHandle(
+    self.handle,
+    ffi.C.GetCurrentProcess(),
+    ffi.C.GetCurrentProcess(),
+    dupHandle,
+    0,
+    false,
+    DUPLICATE_SAME_ACCESS
+  )
+  if ret ~= 0 then
+    self.handle = ffi.gc(dupHandle[0], ffi.C.CloseHandle)
+    return true
+  else
+    DBG:pp({text = "error", err = ffi.C.GetLastError()})
+  end
+
+  return false
+end
+
 --- General routine to get infomration about the process
 -- @param infoClass `PROCESSINFOCLASS`
 -- @param ctype C type returned by `ffi.typeof()`
 -- @param ctypePtr pointer to the type
 -- @param[opt=sizeof(ctype)] assumedSize assumed size of the query info output
+-- @param[opt] dataInitFn function for initialize ctype data
 -- @return typed pointer depends on `typeName` or `nil`
 -- @function queryInfo
-function Methods:queryInfo(infoClass, ctype, ctypePtr, assumedSize)
+function Methods:queryInfo(infoClass, ctype, ctypePtr, assumedSize, dataInitFn)
   local data = assumedSize and ffi.new("char[?]", assumedSize) or ctype()
+  if dataInitFn then
+    dataInitFn(data)
+  end
   local size = assumedSize or ffi.sizeof(ctype)
   local retSize = ffi.new("ULONG[1]")
   local err = ntdll.NtQueryInformationProcess(self.handle, infoClass, data, size, retSize)
+  if IS_STATUS(err, STATUS_ACCESS_DENIED) then
+    local success = self:_tryRaiseHandleRights()
+    if not success then
+      return
+    end
+    err = ntdll.NtQueryInformationProcess(self.handle, infoClass, data, size, retSize)
+  end
+
   if NT_SUCCESS(err) then
     return ffi.cast(ctypePtr, data), retSize[0]
   elseif IS_STATUS(err, STATUS_BUFFER_TOO_SMALL) or IS_STATUS(err, STATUS_INFO_LENGTH_MISMATCH) then
