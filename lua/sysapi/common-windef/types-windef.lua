@@ -48,7 +48,7 @@ ffi.cdef [[
   typedef LONGLONG *PLONGLONG;
   typedef ULONGLONG *PULONGLONG;
   typedef BOOL *PBOOL, *LPBOOL;
-  typedef BYTE *LPBYTE;
+  typedef BYTE *PBYTE, *LPBYTE;
 
   typedef PVOID HANDLE, *PHANDLE, *LPHANDLE;
   typedef PVOID HINSTANCE;
