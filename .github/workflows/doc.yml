@@ -53,7 +53,7 @@ jobs:
 #       run: dir
     
 #     - name: Copy files in repo
-#       run: xcopy doc docs/sysapi /E
+#       run: xcopy doc docs/sysapi /E /Y
       
 #     - name: Configure git
 #       run: |
