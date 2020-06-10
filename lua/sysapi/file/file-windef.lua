@@ -473,4 +473,13 @@ ffi.cdef [[
     LPCSTR lpNewFileName,
     BOOL   bFailIfExists
   );
+
+  BOOL CreateDirectoryA(
+    LPCSTR                lpPathName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes
+  );
+
+  BOOL RemoveDirectoryA(
+    LPCSTR lpPathName
+  );
 ]]
