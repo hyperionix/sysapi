@@ -17,7 +17,7 @@ local Methods = {
 }
 
 -- XXX: This trick is also used to satisfy code completion plugin
-local MT = {__index = Methods}
+local MT = {__index = Methods, __metatable = {}}
 rawset(
   MT,
   string.format("__index"),
@@ -31,18 +31,28 @@ rawset(
 )
 
 local function splitPath(obj)
-  local size = #obj.full
-  local drive = ffi.new("char[5]")
-  local dir = ffi.new("char[?]", size)
-  local basename = ffi.new("char[?]", size)
-  local ext = ffi.new("char[?]", size)
+  if obj.full then
+    local size = #obj.full
+    local drive = ffi.new("char[5]")
+    local dir = ffi.new("char[?]", size)
+    local basename = ffi.new("char[?]", size)
+    local ext = ffi.new("char[?]", size)
 
-  if msvcrt._splitpath_s(obj.full, drive, 5, dir, size, basename, size, ext, size) == 0 then
-    obj.drive = ffi.string(drive):toUTF8()
-    obj.dir = ffi.string(dir):toUTF8()
-    obj.basename = ffi.string(basename):toUTF8()
-    obj.ext = ffi.string(ext):toUTF8()
+    if msvcrt._splitpath_s(obj.full, drive, 5, dir, size, basename, size, ext, size) == 0 then
+      obj.drive = ffi.string(drive):toUTF8()
+      obj.dir = ffi.string(dir):toUTF8()
+      obj.basename = ffi.string(basename):toUTF8()
+      obj.ext = ffi.string(ext):toUTF8()
+      return
+    end
+  else
+    obj.full = ""
   end
+
+  obj.drive = ""
+  obj.dir = ""
+  obj.basename = ""
+  obj.ext = ""
 end
 
 local function internalGetter(obj, name)

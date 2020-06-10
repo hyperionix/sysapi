@@ -353,8 +353,6 @@ function Methods:_tryRaiseHandleRights()
   if ret ~= 0 then
     self.handle = ffi.gc(dupHandle[0], ffi.C.CloseHandle)
     return true
-  else
-    DBG:pp({text = "error", err = ffi.C.GetLastError()})
   end
 
   return false
