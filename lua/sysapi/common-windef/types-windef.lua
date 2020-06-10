@@ -29,7 +29,7 @@ ffi.cdef [[
   typedef const PCSTR *PCZPCSTR;
   
   typedef wchar_t WCHAR, *PWCHAR, *PWCH, *PWSTR, *LPWSTR;
-  typedef WCHAR *PWCHAR, *LPWCH, *PWCH;
+  typedef WCHAR *PWCHAR, *LPWCH, *PWCH, *LMSTR;
   typedef const wchar_t *LPCWSTR, *PCWSTR;
   typedef const WCHAR *LPCWCH, *PCWCH;
 
