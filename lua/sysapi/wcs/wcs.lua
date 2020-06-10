@@ -40,7 +40,7 @@ string.toWC = function(s, code)
   local sz = MB2WC(code, MB, s, -1, nil, 0)
   if sz ~= 0 then
     local ws = WCS_ctype(sz)
-    if MB2WC(code, MB, s, -1, ws, sz) then
+    if MB2WC(code, MB, s, -1, ws, sz) ~= 0 then
       return ws
     end
   end
