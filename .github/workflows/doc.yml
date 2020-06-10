@@ -46,32 +46,32 @@ jobs:
         name: docs
         path: doc/*
         
-#     - name: Clone repo for Push
-#       run: git clone https://${{ secrets.UNAME }}:${{ secrets.TOKEN }}@github.com/hyperionix/docs.git
+    - name: Clone repo for Push
+      run: git clone https://${{ secrets.UNAME }}:${{ secrets.TOKEN }}@github.com/hyperionix/docs.git
     
-#     - name: Check root directory
-#       run: dir
+    - name: Check root directory
+      run: dir
     
-#     - name: Copy files in repo
-#       run: xcopy doc docs/sysapi /E /Y
+    - name: Copy files in repo
+      run: xcopy doc docs/sysapi /E /Y
       
-#     - name: Configure git
-#       run: |
-#         git config --global credential.helper store
-#         Add-Content -Path "$HOME\.git-credentials" -Value "https://$($env:${{ secrets.TOKEN }}):x-oauth-basic@github.com`n" -NoNewline
-#         git config --global user.email "docs@hyperionx.com"
-#         git config --global user.name "auto-update-docs"
-#       shell: powershell
+    - name: Configure git
+      run: |
+        git config --global credential.helper store
+        Add-Content -Path "$HOME\.git-credentials" -Value "https://$($env:${{ secrets.TOKEN }}):x-oauth-basic@github.com`n" -NoNewline
+        git config --global user.email "docs@hyperionx.com"
+        git config --global user.name "auto-update-docs"
+      shell: powershell
     
-#     - name: Add changes
-#       run: git add .
-#       working-directory: ./docs
+    - name: Add changes
+      run: git add .
+      working-directory: ./docs
         
-#     - name: Commit changes
-#       run: git commit -m "Update docs"
-#       working-directory: ./docs
+    - name: Commit changes
+      run: git commit -m "Update docs"
+      working-directory: ./docs
     
-#     - name: Push changes
-#       run: git push origin master
-#       working-directory: ./docs
+    - name: Push changes
+      run: git push origin master
+      working-directory: ./docs
 
