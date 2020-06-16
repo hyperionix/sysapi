@@ -8,6 +8,8 @@ local stringify = require "utils.stringify"
 local Sid = require "sid"
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
+local advapi32 = ffi.load("advapi32")
+assert(advapi32)
 
 local Token = SysapiMod("Token")
 local TokenGetters = {
@@ -82,7 +84,7 @@ end
 -- @function Token.open
 function Token.open(procHandle, access)
   local token = ffi.new("HANDLE[1]")
-  if ffi.C.OpenProcessToken(procHandle, access or TOKEN_ALL_ACCESS, token) then
+  if advapi32.OpenProcessToken(procHandle, access or TOKEN_ALL_ACCESS, token) then
     return setmetatable({handle = ffi.gc(token[0], ffi.C.CloseHandle)}, Token_MT)
   end
 end
