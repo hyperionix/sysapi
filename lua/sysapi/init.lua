@@ -45,7 +45,7 @@ require "sysinfo"
 require "sysapi-mod"
 require "thirdparty"
 
-require "wcs"
+require "strings"
 require "time"
 require "handle"
 require "file"

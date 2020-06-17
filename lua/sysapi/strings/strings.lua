@@ -1,5 +1,5 @@
 setfenv(1, require "sysapi-ns")
-require "wcs.wcs-windef"
+require "strings.strings-windef"
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
 
@@ -22,6 +22,12 @@ string.fromUS = function(us)
     if WC2MB(CP_UTF8, WC, us.Buffer, us.Length / 2, buf, sz, nil, nil) ~= 0 then
       return ffi.string(buf, sz)
     end
+  end
+end
+
+string.fromAS = function(as)
+  if as.Buffer ~= ffi.NULL and as.Length ~= 0 then
+    return ffi.string(as.Buffer, as.Length)
   end
 end
 
