@@ -15,6 +15,8 @@ local bor = bit.bor
 local string = string
 local ntdll = ffi.load("ntdll")
 assert(ntdll)
+local kernelbase = ffi.load("KernelBase")
+assert(kernelbase)
 
 tcache:cache("PROCESS_EXTENDED_BASIC_INFORMATION")
 tcache:cache("UNICODE_STRING")
@@ -333,7 +335,7 @@ end
 
 function Methods:_getPolicy(policyType, ctype, ctypePtr)
   local buffer = ctype()
-  if ffi.C.GetProcessMitigationPolicy(self.handle, policyType, buffer, ffi.sizeof(buffer)) ~= 0 then
+  if kernelbase.GetProcessMitigationPolicy(self.handle, policyType, buffer, ffi.sizeof(buffer)) ~= 0 then
     return ffi.cast(ctypePtr, buffer)
   end
 end
