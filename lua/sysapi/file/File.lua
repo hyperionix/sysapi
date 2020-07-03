@@ -277,6 +277,15 @@ function M.delete(path)
   return ffi.C.DeleteFileA(path)
 end
 
+--- Check if file exists
+-- @param path to file
+-- @return `true` or `false`
+-- @function File.exists
+function M.exists(path)
+  local attr = ffi.C.GetFileAttributesA(path)
+  return attr ~= INVALID_FILE_ATTRIBUTES and band(attr, FILE_ATTRIBUTE_DIRECTORY) == 0
+end
+
 --- Stringify file attributes mask
 -- @int attrs file attributes
 -- @return string representation of the mask

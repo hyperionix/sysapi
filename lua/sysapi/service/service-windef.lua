@@ -59,8 +59,68 @@ SC_MANAGER_ALL_ACCESS =
   SC_MANAGER_MODIFY_BOOT_CONFIG
 )
 
+SERVICE_QUERY_CONFIG = 0x0001
+SERVICE_CHANGE_CONFIG = 0x0002
+SERVICE_QUERY_STATUS = 0x0004
+SERVICE_ENUMERATE_DEPENDENTS = 0x0008
+SERVICE_START = 0x0010
+SERVICE_STOP = 0x0020
+SERVICE_PAUSE_CONTINUE = 0x0040
+SERVICE_INTERROGATE = 0x0080
+SERVICE_USER_DEFINED_CONTROL = 0x0100
+SERVICE_ALL_ACCESS =
+  bor(
+  STANDARD_RIGHTS_REQUIRED,
+  SERVICE_QUERY_CONFIG,
+  SERVICE_CHANGE_CONFIG,
+  SERVICE_QUERY_STATUS,
+  SERVICE_ENUMERATE_DEPENDENTS,
+  SERVICE_START,
+  SERVICE_STOP,
+  SERVICE_PAUSE_CONTINUE,
+  SERVICE_INTERROGATE,
+  SERVICE_USER_DEFINED_CONTROL
+)
+
+StringifyTableStart("SERVICE_START_TYPE")
+SERVICE_BOOT_START = 0x00000000
+SERVICE_SYSTEM_START = 0x00000001
+SERVICE_AUTO_START = 0x00000002
+SERVICE_DEMAND_START = 0x00000003
+SERVICE_DISABLED = 0x00000004
+StringifyTableEnd()
+
+StringifyTableStart("SERVICE_ERR_CONTROL")
+SERVICE_ERROR_IGNORE = 0x00000000
+SERVICE_ERROR_NORMAL = 0x00000001
+SERVICE_ERROR_SEVERE = 0x00000002
+SERVICE_ERROR_CRITICAL = 0x00000003
+StringifyTableEnd()
+
+StringifyTableStart("SERVICE_CONTROL_CODE")
+SERVICE_CONTROL_STOP = 0x00000001
+SERVICE_CONTROL_PAUSE = 0x00000002
+SERVICE_CONTROL_CONTINUE = 0x00000003
+SERVICE_CONTROL_INTERROGATE = 0x00000004
+SERVICE_CONTROL_PARAMCHANGE = 0x00000006
+SERVICE_CONTROL_NETBINDADD = 0x00000007
+SERVICE_CONTROL_NETBINDREMOVE = 0x00000008
+SERVICE_CONTROL_NETBINDENABLE = 0x00000009
+SERVICE_CONTROL_NETBINDDISABLE = 0x0000000A
+StringifyTableEnd()
+
 ffi.cdef [[
   typedef HANDLE SC_HANDLE;
+
+  typedef struct _SERVICE_STATUS {
+    DWORD dwServiceType;
+    DWORD dwCurrentState;
+    DWORD dwControlsAccepted;
+    DWORD dwWin32ExitCode;
+    DWORD dwServiceSpecificExitCode;
+    DWORD dwCheckPoint;
+    DWORD dwWaitHint;
+  } SERVICE_STATUS, *LPSERVICE_STATUS;
 
   typedef struct _SERVICE_STATUS_PROCESS {
     DWORD dwServiceType;
@@ -74,11 +134,35 @@ ffi.cdef [[
     DWORD dwServiceFlags;
   } SERVICE_STATUS_PROCESS, *LPSERVICE_STATUS_PROCESS;
 
+  typedef struct _ENUM_SERVICE_STATUSA {
+    LPSTR          lpServiceName;
+    LPSTR          lpDisplayName;
+    SERVICE_STATUS ServiceStatus;
+  } ENUM_SERVICE_STATUSA, *LPENUM_SERVICE_STATUSA;
+
+  typedef struct _ENUM_SERVICE_STATUSW {
+    LPWSTR         lpServiceName;
+    LPWSTR         lpDisplayName;
+    SERVICE_STATUS ServiceStatus;
+  } ENUM_SERVICE_STATUSW, *LPENUM_SERVICE_STATUSW;
+
   typedef struct _ENUM_SERVICE_STATUS_PROCESSA {
     LPSTR                     lpServiceName;
     LPSTR                     lpDisplayName;
     SERVICE_STATUS_PROCESS    ServiceStatusProcess;
   } ENUM_SERVICE_STATUS_PROCESSA, *LPENUM_SERVICE_STATUS_PROCESSA;
+
+  typedef struct _QUERY_SERVICE_CONFIGA {
+    DWORD dwServiceType;
+    DWORD dwStartType;
+    DWORD dwErrorControl;
+    LPSTR lpBinaryPathName;
+    LPSTR lpLoadOrderGroup;
+    DWORD dwTagId;
+    LPSTR lpDependencies;
+    LPSTR lpServiceStartName;
+    LPSTR lpDisplayName;
+  } QUERY_SERVICE_CONFIGA, *LPQUERY_SERVICE_CONFIGA;
 ]]
 
 ffi.cdef [[
@@ -117,5 +201,44 @@ ffi.cdef [[
     LPDWORD      lpServicesReturned,
     LPDWORD      lpResumeHandle,
     LPCSTR       pszGroupName
+  );
+
+  BOOL DeleteService(
+    SC_HANDLE hService
+  );
+
+  SC_HANDLE CreateServiceA(
+    SC_HANDLE hSCManager,
+    LPCSTR    lpServiceName,
+    LPCSTR    lpDisplayName,
+    DWORD     dwDesiredAccess,
+    DWORD     dwServiceType,
+    DWORD     dwStartType,
+    DWORD     dwErrorControl,
+    LPCSTR    lpBinaryPathName,
+    LPCSTR    lpLoadOrderGroup,
+    LPDWORD   lpdwTagId,
+    LPCSTR    lpDependencies,
+    LPCSTR    lpServiceStartName,
+    LPCSTR    lpPassword
+  );
+
+  BOOL StartServiceA(
+    SC_HANDLE hService,
+    DWORD     dwNumServiceArgs,
+    LPCSTR    *lpServiceArgVectors
+  );
+
+  BOOL ControlService(
+    SC_HANDLE        hService,
+    DWORD            dwControl,
+    LPSERVICE_STATUS lpServiceStatus
+  );
+
+  BOOL QueryServiceConfigA(
+    SC_HANDLE               hService,
+    LPQUERY_SERVICE_CONFIGA lpServiceConfig,
+    DWORD                   cbBufSize,
+    LPDWORD                 pcbBytesNeeded
   );
 ]]

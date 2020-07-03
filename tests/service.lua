@@ -5,10 +5,15 @@ local mgr = ServiceManager.open()
 assert(mgr)
 local service = mgr:openService("http")
 assert(service)
-if service:updateInfo() then
-  assert(service.type)
-  assert(service.state)
-  assert(service.pid)
+if service:updateStatus() then
+  assert(service.status.state)
+  assert(service.status.pid)
+end
+if service:updateConfig() then
+  assert(service.config.type)
+  assert(service.config.startType)
+  assert(service.config.name)
+  assert(service.config.binPath)
 end
 
 mgr:forEachService(
