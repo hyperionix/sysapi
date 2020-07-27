@@ -1,0 +1,13 @@
+setfenv(1, require "sysapi-ns")
+
+GET_MODULE_HANDLE_EX_FLAG_PIN = 0x00000001
+GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT = 0x00000002
+GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS = 0x00000004
+
+ffi.cdef [[
+  BOOL GetModuleHandleExA(
+    DWORD   dwFlags,
+    LPCSTR  lpModuleName,
+    HMODULE *phModule
+  );
+]]
