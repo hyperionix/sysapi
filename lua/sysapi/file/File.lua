@@ -356,6 +356,19 @@ function Methods:isDirectory()
   end
 end
 
+--- Map file content for reading
+function Methods:map()
+  local h = ffi.C.CreateFileMappingA(self.handle, nil, PAGE_READONLY, 0, 0, nil)
+  if h ~= ffi.NULL then
+    h = ffi.gc(h, ffi.C.CloseHandle)
+    local addr = ffi.C.MapViewOfFile(h, FILE_MAP_READ, 0, 0, self.size)
+    ffi.C.CloseHandle(ffi.gc(h, nil))
+    if addr then
+      return ffi.gc(addr, ffi.C.UnmapViewOfFile)
+    end
+  end
+end
+
 --- Query information about the file
 -- @param infoClass `FILE_INFORMATION_CLASS`
 -- @param ctype C type returned by `ffi.typeof()`
