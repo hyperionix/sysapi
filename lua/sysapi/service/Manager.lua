@@ -21,12 +21,26 @@ function ServiceManager.open(access)
   end
 end
 
---- Open a service and crete corresponding @{Service} object
+--- Open a service and create corresponding @{Service} object
 -- @param name name of the target service
 -- @param[opt=GENERIC_ALL] access desired access to the service
 -- @return @{Service} object
 function ServiceManager:openService(name, access)
   return Service.open(self.handle, name, access)
+end
+
+--- Create a service and create corresponding @{Service} object
+-- @param name name of the service
+-- @param binPath fully qualified path to the service binary file, can also include arguments
+-- @param[opt=SERVICE_ALL_ACCESS] access desired access to the service
+-- @param[opt=SERVICE_WIN32_OWN_PROCESS] serviceType service type
+-- @param[opt=SERVICE_DEMAND_START] startType service start options
+-- @param[opt=SERVICE_ERROR_NORMAL] errControl severity of the error, and action taken, if this service fails to start
+-- @param[opt] account name of the account under which the service should run
+-- @param[opt] password password to the account name specified by the account parameter
+-- @return @{Service} object
+function ServiceManager:createService(name, binPath, access, serviceType, startType, errControl, account, password)
+  return Service.create(self.handle, name, binPath, access, serviceType, startType, errControl, account, password)
 end
 
 --- Enumerates services and call the function for each

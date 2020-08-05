@@ -1,4 +1,5 @@
 setfenv(1, require "sysapi-ns")
+local bor = bit.bor
 
 -- Memory Protection Constants
 -- https://docs.microsoft.com/en-us/windows/desktop/memory/memory-protection-constants
@@ -34,6 +35,27 @@ MEM_DIFFERENT_IMAGE_BASE_OK = 0x800000
 MEM_RESET_UNDO = 0x1000000
 MEM_LARGE_PAGES = 0x20000000
 MEM_4MB_PAGES = 0x80000000
+
+SECTION_QUERY = 0x0001
+SECTION_MAP_WRITE = 0x0002
+SECTION_MAP_READ = 0x0004
+SECTION_MAP_EXECUTE = 0x0008
+SECTION_EXTEND_SIZE = 0x0010
+SECTION_MAP_EXECUTE_EXPLICIT = 0x0020
+
+SECTION_ALL_ACCESS =
+  bor(
+  STANDARD_RIGHTS_REQUIRED,
+  SECTION_QUERY,
+  SECTION_MAP_WRITE,
+  SECTION_MAP_READ,
+  SECTION_MAP_EXECUTE,
+  SECTION_EXTEND_SIZE
+)
+
+FILE_MAP_WRITE = SECTION_MAP_WRITE
+FILE_MAP_READ = SECTION_MAP_READ
+FILE_MAP_ALL_ACCESS = SECTION_ALL_ACCESS
 
 ffi.cdef [[
   typedef struct _MEMORY_BASIC_INFORMATION {
@@ -120,4 +142,24 @@ ffi.cdef [[
       DWORD  dwFreeType
     );
 
+    HANDLE CreateFileMappingA(
+      HANDLE                hFile,
+      LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
+      DWORD                 flProtect,
+      DWORD                 dwMaximumSizeHigh,
+      DWORD                 dwMaximumSizeLow,
+      LPCSTR                lpName
+    );
+  
+    LPVOID MapViewOfFile(
+      HANDLE hFileMappingObject,
+      DWORD  dwDesiredAccess,
+      DWORD  dwFileOffsetHigh,
+      DWORD  dwFileOffsetLow,
+      SIZE_T dwNumberOfBytesToMap
+    );
+  
+    BOOL UnmapViewOfFile(
+      LPCVOID lpBaseAddress
+    );
 ]]

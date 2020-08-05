@@ -122,6 +122,7 @@ FILE_NAME_NORMALIZED = 0x0
 FILE_NAME_OPENED = 0x8
 
 INVALID_HANDLE_VALUE = ffi.cast("HANDLE", -1)
+INVALID_FILE_ATTRIBUTES = ffi.cast("DWORD", -1)
 
 -- https://docs.microsoft.com/ru-ru/windows-hardware/drivers/ddi/ntddk/ns-ntddk-_file_disposition_information_ex
 FILE_DISPOSITION_DO_NOT_DELETE = 0x00000000
@@ -481,5 +482,9 @@ ffi.cdef [[
 
   BOOL RemoveDirectoryA(
     LPCSTR lpPathName
+  );
+
+  DWORD GetFileAttributesA(
+    LPCSTR lpFileName
   );
 ]]

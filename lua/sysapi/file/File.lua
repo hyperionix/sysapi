@@ -277,6 +277,15 @@ function M.delete(path)
   return ffi.C.DeleteFileA(path)
 end
 
+--- Check if file exists
+-- @param path to file
+-- @return `true` or `false`
+-- @function File.exists
+function M.exists(path)
+  local attr = ffi.C.GetFileAttributesA(path)
+  return attr ~= INVALID_FILE_ATTRIBUTES and band(attr, FILE_ATTRIBUTE_DIRECTORY) == 0
+end
+
 --- Stringify file attributes mask
 -- @int attrs file attributes
 -- @return string representation of the mask
@@ -344,6 +353,19 @@ function Methods:isDirectory()
     return self._standardInfo.Directory == 1 and true or false
   else
     return false
+  end
+end
+
+--- Map file content for reading
+function Methods:map()
+  local h = ffi.C.CreateFileMappingA(self.handle, nil, PAGE_READONLY, 0, 0, nil)
+  if h ~= ffi.NULL then
+    h = ffi.gc(h, ffi.C.CloseHandle)
+    local addr = ffi.C.MapViewOfFile(h, FILE_MAP_READ, 0, 0, self.size)
+    ffi.C.CloseHandle(ffi.gc(h, nil))
+    if addr then
+      return ffi.gc(addr, ffi.C.UnmapViewOfFile)
+    end
   end
 end
 

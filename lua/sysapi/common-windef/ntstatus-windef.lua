@@ -14,10 +14,14 @@ STATUS_ACCESS_DENIED = 0xC0000022
 STATUS_BUFFER_TOO_SMALL = 0xC0000023
 STATUS_OBJECT_TYPE_MISMATCH = 0xC0000024
 
+local INT32_T = ffi.typeof("int32_t")
+local INT64_T = ffi.typeof("int64_t")
+local UINT32_T = ffi.typeof("uint32_t")
+
 function NT_SUCCESS(status)
-  return ffi.cast("int32_t", status) >= 0
+  return ffi.cast(INT32_T, status) >= 0
 end
 
 function IS_STATUS(status, value)
-  return tonumber(ffi.cast("uint32_t", status)) == value
+  return tonumber(ffi.cast(UINT32_T, ffi.cast(INT64_T, status))) == value
 end
